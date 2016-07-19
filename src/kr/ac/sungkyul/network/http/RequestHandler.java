@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class RequestHandler extends Thread {
 	private Socket socket;
@@ -48,6 +49,7 @@ public class RequestHandler extends Thread {
 				responseStaticResource(outputStream, tokens[1], tokens[2] );
 			} else {
 				/* POST, PUT, DELETE 지원 안함 ( 400 Bad Request ) */
+				response400Error( outputStream, tokens[2] );
 			} 
 			
 			// 예제 응답입니다.
@@ -71,23 +73,50 @@ public class RequestHandler extends Thread {
 			}
 		}			
 	}
-
-	private void responseStaticResource( 
-		OutputStream outputStream, String url, String protocol ) throws IOException {
-		File file = new File( "./webapp" + url );
-		if( file.exists() == false ) {
-			consoleLog( "File Not Found" );
-			return;
-		}
-		
+	
+	private void response404Error( OutputStream outputStream, String protocol ) throws IOException {
+		File file = new File( "./webapp/error/404.html" );
 		byte[] body = Files.readAllBytes( file.toPath() );
 		
 		// 응답 헤더
-		outputStream.write( ( protocol + " 200 OK\r\n").getBytes( "UTF-8" ) );
+		outputStream.write( ( protocol + " 404 File Not Found\r\n").getBytes( "UTF-8" ) );
 		outputStream.write( "Content-Type:text/html; charset=utf-8\r\n".getBytes( "UTF-8" ) );
-		
 		outputStream.write( "\r\n".getBytes( "UTF-8" ) );
+		outputStream.write( body );
+	}
+	
+	private void response400Error( OutputStream outputStream, String protocol ) throws IOException {
+		File file = new File( "./webapp/error/400.html" );
+		byte[] body = Files.readAllBytes( file.toPath() );
 		
+		// 응답 헤더
+		outputStream.write( ( protocol + " 400 Bad Request\r\n").getBytes( "UTF-8" ) );
+		outputStream.write( "Content-Type:text/html; charset=utf-8\r\n".getBytes( "UTF-8" ) );
+		outputStream.write( "\r\n".getBytes( "UTF-8" ) );
+		outputStream.write( body );
+	}
+	
+	private void responseStaticResource( 
+		OutputStream outputStream, String url, String protocol ) throws IOException {
+		
+		if( "/".equals( url ) ) {
+			url = "/index.html";
+		}
+		
+		File file = new File( "./webapp" + url );
+		if( file.exists() == false ) {
+			response404Error( outputStream, protocol );
+			return;
+		}
+		
+		Path path = file.toPath();
+		String mime = Files.probeContentType(path);
+		byte[] body = Files.readAllBytes( path );
+		
+		// 응답 헤더
+		outputStream.write( ( protocol + " 200 OK\r\n").getBytes( "UTF-8" ) );
+		outputStream.write( ( "Content-Type:" + mime + "; charset=utf-8\r\n").getBytes( "UTF-8" ) );
+		outputStream.write( "\r\n".getBytes( "UTF-8" ) );
 		// 응답 바디
 		outputStream.write( body );
 	}
