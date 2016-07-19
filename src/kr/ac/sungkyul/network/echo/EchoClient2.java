@@ -1,14 +1,16 @@
 package kr.ac.sungkyul.network.echo;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Scanner;
 
-public class EchoClient {
+public class EchoClient2 {
 	private static final String SERVER_IP = "220.67.115.217";
 	private static final int SERVER_PORT = 3000;
 
@@ -29,9 +31,11 @@ public class EchoClient {
 			socket.connect(serverSocketAddress);
 
 			// IOStream 받아오기
-			InputStream is = socket.getInputStream();
-			OutputStream os = socket.getOutputStream();
-
+			BufferedReader br = new BufferedReader( 
+					new InputStreamReader( socket.getInputStream(), "utf-8"));
+			PrintWriter pw = new PrintWriter(
+					new OutputStreamWriter( socket.getOutputStream(), "utf-8" ), true );
+			
 			while (true) {
 				// 메세지 입력
 				System.out.print(">>");
@@ -42,19 +46,16 @@ public class EchoClient {
 				}
 				
 				// 메세지 보내기
-				os.write(message.getBytes("UTF-8"));
+				pw.println( message );
 
 				// 메세지 다시 받기
-				byte[] buffer = new byte[256];
-
-				int readBytes = is.read(buffer);
-				if (readBytes <= -1) { // 서버가 연결을 끊음
+				String messageEcho = br.readLine();
+				if (messageEcho == null ) { // 서버가 연결을 끊음
 					System.out.println("[client] close by server");
 					break;
 				}
 
 				// 받은 메세지 출력
-				String messageEcho = new String(buffer, 0, readBytes, "UTF-8");
 				System.out.println("<<" + messageEcho);
 			}
 		} catch (SocketException e) {
