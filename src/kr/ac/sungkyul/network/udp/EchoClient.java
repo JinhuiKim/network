@@ -6,43 +6,67 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
 public class EchoClient {
-	private static final String SERVER_IP = "";
+	private static final String SERVER_IP = "220.67.115.217";
 	private static final int SERVER_PORT = 2000;
-	
-	/**
-	 * @param args
-	 */
+	private static final int BUFFER_SIZE = 1024;
+
 	public static void main(String[] args) {
+		Scanner scanner = null;
 		DatagramSocket socket = null;
-		
-		
+
 		try {
-			//1. 소켓 생성
+			// 0. 키보드 연결
+			scanner = new Scanner(System.in);
+
+			// 1. 소켓 생성
 			socket = new DatagramSocket();
-			
-			//2. 데이터 송신
-			String message = "Hello World";
-			byte[] sendData = message.getBytes( StandardCharsets.UTF_8 );
-			
-			DatagramPacket sendPacket = 
-				new DatagramPacket(
-				sendData,
-				sendData.length,
-				new InetSocketAddress( SERVER_IP, SERVER_PORT ));	
-					
-			socket.send( sendPacket );
+
+			while (true) {
+				
+				// 2. 사용자 입력값 받음
+				System.out.print(">>");
+				String message = scanner.nextLine();
+
+				if( "quit".equals( message ) ) {
+					break;
+				}
+				
+				// 3. 데이터 송신
+				byte[] sendData = message.getBytes(StandardCharsets.UTF_8);
+				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
+						new InetSocketAddress(SERVER_IP, SERVER_PORT));
+
+				socket.send(sendPacket);
+				
+				// 4. 데이터 수신
+				DatagramPacket receivePacket = new DatagramPacket( new byte[ BUFFER_SIZE ], BUFFER_SIZE );
+				socket.receive( receivePacket ); //block
+				
+				String data = new String(
+						receivePacket.getData(),
+						0,
+						receivePacket.getLength(),
+						StandardCharsets.UTF_8 );
+				System.out.println( "<<" + data );
+				
+			}
 		} catch (SocketException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			if( socket != null && socket.isClosed() == false ) {
+			if (scanner != null) {
+				scanner.close();
+			}
+
+			if (socket != null && socket.isClosed() == false) {
 				socket.close();
 			}
 		}
-		
+
 	}
 
 }
